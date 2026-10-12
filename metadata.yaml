@@ -1,6 +1,6 @@
-name: astrbot_plugin_newapi_ban
-display_name: new-api 退群自动封禁
-desc: QQ 成员退群时，自动禁用其在 new-api 中对应的账户（账户邮箱 = QQ号@域名）。
+name: astrbot_plugin_meowapi_ban
+display_name: meow-api 退群自动封禁
+desc: QQ 成员退群时，自动禁用其在 meow-api 中对应的账户（账户邮箱 = QQ号@域名）。
 version: v0.1.0
 author: xingguangcuican
 repo: https://github.com/xingguangcuican6666/astr_meowapi_autoban

@@ -1,4 +1,4 @@
-"""AstrBot 插件：QQ 成员退群时，自动禁用其在 new-api 中对应的账户。
+"""AstrBot 插件：QQ 成员退群时，自动禁用其在 meow-api 中对应的账户。
 
 账户匹配规则：退群成员的 QQ 号 + "@" + 配置的邮箱域名（默认 qq.com）即为账户邮箱。
 依赖 aiocqhttp（OneBot v11）平台适配器——QQ 官方 Bot 适配器不会下发退群通知。
@@ -13,31 +13,31 @@ from astrbot.api import AstrBotConfig, logger
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, register
 
-# new-api 用户状态常量（见 new-api common/constants.go：1=启用，2=禁用）
+# meow-api 用户状态常量（见 meow-api common/constants.go：1=启用，2=禁用）
 _STATUS_ENABLED = 1
 _STATUS_DISABLED = 2
 
 
 def _strip_bearer(token: str) -> str:
-    """去掉可能存在的 "Bearer " 前缀；new-api 两种写法都接受，统一发裸令牌。"""
+    """去掉可能存在的 "Bearer " 前缀；meow-api 两种写法都接受，统一发裸令牌。"""
     if token.lower().startswith("bearer "):
         return token[7:].strip()
     return token
 
 
 @register(
-    "astrbot_plugin_newapi_ban",
+    "astrbot_plugin_meowapi_ban",
     "xingguangcuican",
-    "QQ 退群时自动禁用其对应的 new-api 账户（邮箱=QQ号@域名）",
+    "QQ 退群时自动禁用其对应的 meow-api 账户（邮箱=QQ号@域名）",
     "0.1.0",
     "https://github.com/xingguangcuican6666/astr_meowapi_autoban",
 )
-class NewApiBanPlugin(Star):
+class MeowApiBanPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
         self.config = config
-        self.base_url = str(config.get("newapi_base_url", "")).strip().rstrip("/")
-        self.access_token = _strip_bearer(str(config.get("newapi_access_token", "")).strip())
+        self.base_url = str(config.get("meowapi_base_url", "")).strip().rstrip("/")
+        self.access_token = _strip_bearer(str(config.get("meowapi_access_token", "")).strip())
         _domain = str(config.get("email_domain", "qq.com")).strip().lstrip("@")
         self.email_domain = _domain or "qq.com"
         self.handle_kick = bool(config.get("handle_kick", True))
@@ -60,11 +60,11 @@ class NewApiBanPlugin(Star):
         self._http = ClientSession(timeout=ClientTimeout(total=self.request_timeout))
         if not self.base_url or not self.access_token:
             logger.warning(
-                "[newapi-ban] 未配置 newapi_base_url / newapi_access_token，退群事件将不会执行禁用。"
+                "[meowapi-ban] 未配置 meowapi_base_url / meowapi_access_token，退群事件将不会执行禁用。"
             )
         else:
             logger.info(
-                f"[newapi-ban] 已就绪 base_url={self.base_url} dry_run={self.dry_run} "
+                f"[meowapi-ban] 已就绪 base_url={self.base_url} dry_run={self.dry_run} "
                 f"handle_kick={self.handle_kick} 生效群={self.enabled_groups or '全部'}"
             )
 
@@ -101,63 +101,63 @@ class NewApiBanPlugin(Star):
         if self.enabled_groups and group_id not in self.enabled_groups:
             return
         if not self.base_url or not self.access_token:
-            logger.warning(f"[newapi-ban] 收到退群事件(qq={qq})但未配置 new-api，已跳过。")
+            logger.warning(f"[meowapi-ban] 收到退群事件(qq={qq})但未配置 meow-api，已跳过。")
             return
 
         email = f"{qq}@{self.email_domain}"
         reason = {"leave": "主动退群", "kick": "被踢出群"}.get(sub_type, f"退群({sub_type})")
-        logger.info(f"[newapi-ban] 检测到退群 group={group_id} qq={qq} email={email} 类型={reason}")
+        logger.info(f"[meowapi-ban] 检测到退群 group={group_id} qq={qq} email={email} 类型={reason}")
 
         try:
             ok, summary = await self._manage_by_email(email, "disable")
         except Exception as e:  # 兜底：任何异常都不应影响 AstrBot 其它流程
-            logger.error(f"[newapi-ban] 处理退群事件异常 qq={qq}: {e}", exc_info=True)
+            logger.error(f"[meowapi-ban] 处理退群事件异常 qq={qq}: {e}", exc_info=True)
             ok, summary = False, f"内部异常：{e}"
 
         (logger.info if ok else logger.warning)(
-            f"[newapi-ban] 处理完成 email={email} 成功={ok} 详情={summary}"
+            f"[meowapi-ban] 处理完成 email={email} 成功={ok} 详情={summary}"
         )
 
         if self.notify_group:
-            head = "[new-api 自动封禁]" + ("（演练）" if self.dry_run else "")
+            head = "[meow-api 自动封禁]" + ("（演练）" if self.dry_run else "")
             yield event.plain_result(f"{head} {qq} {reason}\n{summary}")
 
-    @filter.command("newapi_ban")
+    @filter.command("meowapi_ban")
     @filter.permission_type(filter.PermissionType.ADMIN)
     async def cmd_ban(self, event: AstrMessageEvent, qq: str = ""):
-        """手动禁用某 QQ 对应的 new-api 账户：/newapi_ban <QQ号>（仅机器人管理员）。"""
+        """手动禁用某 QQ 对应的 meow-api 账户：/meowapi_ban <QQ号>（仅机器人管理员）。"""
         async for r in self._cmd_manage(event, qq, "disable"):
             yield r
 
-    @filter.command("newapi_unban")
+    @filter.command("meowapi_unban")
     @filter.permission_type(filter.PermissionType.ADMIN)
     async def cmd_unban(self, event: AstrMessageEvent, qq: str = ""):
-        """手动解禁某 QQ 对应的 new-api 账户：/newapi_unban <QQ号>（仅机器人管理员）。"""
+        """手动解禁某 QQ 对应的 meow-api 账户：/meowapi_unban <QQ号>（仅机器人管理员）。"""
         async for r in self._cmd_manage(event, qq, "enable"):
             yield r
 
     async def _cmd_manage(self, event: AstrMessageEvent, qq: str, action: str):
         """手动命令共用逻辑；手动操作始终真实执行（不受 dry_run 影响）。"""
-        name = "newapi_ban" if action == "disable" else "newapi_unban"
+        name = "meowapi_ban" if action == "disable" else "meowapi_unban"
         verb = "禁用" if action == "disable" else "解禁"
         qq = (qq or "").strip()
         if not qq.isdigit():
             yield event.plain_result(f"用法：/{name} <QQ号>")
             return
         if not self.base_url or not self.access_token:
-            yield event.plain_result("[new-api] 插件未配置 newapi_base_url / newapi_access_token。")
+            yield event.plain_result("[meow-api] 插件未配置 meowapi_base_url / meowapi_access_token。")
             return
         email = f"{qq}@{self.email_domain}"
         try:
             ok, summary = await self._manage_by_email(email, action, respect_dry_run=False)
         except Exception as e:
-            logger.error(f"[newapi-ban] 手动{verb} qq={qq} 异常: {e}", exc_info=True)
+            logger.error(f"[meowapi-ban] 手动{verb} qq={qq} 异常: {e}", exc_info=True)
             ok, summary = False, f"内部异常：{e}"
-        logger.info(f"[newapi-ban] 手动{verb} email={email} 成功={ok} 详情={summary}")
-        yield event.plain_result(f"[new-api 手动{verb}] {qq}\n{summary}")
+        logger.info(f"[meowapi-ban] 手动{verb} email={email} 成功={ok} 详情={summary}")
+        yield event.plain_result(f"[meow-api 手动{verb}] {qq}\n{summary}")
 
     async def _manage_by_email(self, email: str, action: str, respect_dry_run: bool = True):
-        """按邮箱精确匹配 new-api 账户并执行 action（disable/enable）。返回 (是否全部成功, 文字说明)。"""
+        """按邮箱精确匹配 meow-api 账户并执行 action（disable/enable）。返回 (是否全部成功, 文字说明)。"""
         # 1) 搜索：后端对 username/email/display_name 做 LIKE '%keyword%' 模糊匹配，
         #    默认每页仅 10 条、按 id 倒序。用完整邮箱作关键字时，QQ 号互为后缀的账户
         #    （如 123456@ 与 7123456@）也会命中，可能把目标挤出首页而漏封；因此需分页
@@ -186,7 +186,7 @@ class NewApiBanPlugin(Star):
                 break
         else:
             logger.warning(
-                f"[newapi-ban] 搜索 {email} 翻页达到上限 {max_pages} 页，可能未覆盖全部匹配。"
+                f"[meowapi-ban] 搜索 {email} 翻页达到上限 {max_pages} 页，可能未覆盖全部匹配。"
             )
 
         if not targets:
@@ -220,7 +220,7 @@ class NewApiBanPlugin(Star):
                 results.append(f"id={uid}({uname}) {verb}失败：{resp.get('message') or '未知错误'}")
         return all_ok, "；".join(results)
 
-    # ---------------- new-api HTTP 封装 ----------------
+    # ---------------- meow-api HTTP 封装 ----------------
 
     async def _ensure_session(self) -> ClientSession:
         if self._http is None or self._http.closed:
@@ -228,7 +228,7 @@ class NewApiBanPlugin(Star):
         return self._http
 
     def _request_kwargs(self) -> dict:
-        # new-api 以 Authorization 头识别管理员访问令牌（可带/不带 Bearer）；令牌为机密，不记录。
+        # meow-api 以 Authorization 头识别管理员访问令牌（可带/不带 Bearer）；令牌为机密，不记录。
         kwargs = {"headers": {"Authorization": self.access_token}}
         if not self.verify_ssl:
             kwargs["ssl"] = False

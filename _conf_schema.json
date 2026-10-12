@@ -1,16 +1,16 @@
 {
-  "newapi_base_url": {
-    "description": "new-api 后端地址",
+  "meowapi_base_url": {
+    "description": "meow-api 后端地址",
     "type": "string",
     "hint": "例如 http://127.0.0.1:3000（不要以 / 结尾，无需带 /api）",
     "default": ""
   },
-  "newapi_access_token": {
+  "meowapi_access_token": {
     "description": "管理员的系统访问令牌（访问密钥）",
     "type": "string",
     "secret": true,
     "obvious_hint": true,
-    "hint": "在 new-api 用管理员/root 账号于『个人设置 → 生成系统访问令牌』获取；该账号角色需 ≥ 管理员(10)。将作为 Authorization 头发送，请妥善保管，日志中不会打印其值。",
+    "hint": "在 meow-api 用管理员/root 账号于『个人设置 → 生成系统访问令牌』获取；该账号角色需 ≥ 管理员(10)。将作为 Authorization 头发送，请妥善保管，日志中不会打印其值。",
     "default": ""
   },
   "email_domain": {
@@ -40,19 +40,19 @@
   "dry_run": {
     "description": "演练模式（只查询不禁用）",
     "type": "bool",
-    "hint": "开启后只做邮箱匹配与日志记录，不会真正调用禁用接口。建议首次部署先开启，确认 QQ→邮箱→账户 映射无误后再关闭。仅影响退群自动禁用；手动命令 /newapi_ban、/newapi_unban 始终真实执行。",
+    "hint": "开启后只做邮箱匹配与日志记录，不会真正调用禁用接口。建议首次部署先开启，确认 QQ→邮箱→账户 映射无误后再关闭。仅影响退群自动禁用；手动命令 /meowapi_ban、/meowapi_unban 始终真实执行。",
     "default": false
   },
   "verify_ssl": {
     "description": "校验 HTTPS 证书",
     "type": "bool",
-    "hint": "若 new-api 使用自签名证书的 https，可关闭；http 或正规证书请保持开启。",
+    "hint": "若 meow-api 使用自签名证书的 https，可关闭；http 或正规证书请保持开启。",
     "default": true
   },
   "request_timeout": {
     "description": "请求超时时间（秒）",
     "type": "int",
-    "hint": "调用 new-api 的单次请求超时，默认 10 秒。",
+    "hint": "调用 meow-api 的单次请求超时，默认 10 秒。",
     "default": 10
   }
 }
