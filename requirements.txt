@@ -1,0 +1,2 @@
+# aiohttp 已随 AstrBot 核心依赖安装，此处显式声明且不锁定版本，避免与核心版本冲突。
+aiohttp

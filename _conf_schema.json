@@ -1,0 +1,58 @@
+{
+  "newapi_base_url": {
+    "description": "new-api 后端地址",
+    "type": "string",
+    "hint": "例如 http://127.0.0.1:3000（不要以 / 结尾，无需带 /api）",
+    "default": ""
+  },
+  "newapi_access_token": {
+    "description": "管理员的系统访问令牌（访问密钥）",
+    "type": "string",
+    "secret": true,
+    "obvious_hint": true,
+    "hint": "在 new-api 用管理员/root 账号于『个人设置 → 生成系统访问令牌』获取；该账号角色需 ≥ 管理员(10)。将作为 Authorization 头发送，请妥善保管，日志中不会打印其值。",
+    "default": ""
+  },
+  "email_domain": {
+    "description": "退群成员邮箱域名",
+    "type": "string",
+    "hint": "待禁用账户的邮箱 = QQ号 + '@' + 该域名，默认 qq.com",
+    "default": "qq.com"
+  },
+  "handle_kick": {
+    "description": "成员被踢出时也禁用其账户",
+    "type": "bool",
+    "hint": "开启：主动退群(leave) 与 被管理员踢出(kick) 都禁用；关闭：仅处理主动退群。任何情况下都会忽略机器人自身被踢(kick_me)。",
+    "default": true
+  },
+  "enabled_groups": {
+    "description": "生效的 QQ 群号列表（留空 = 对所有群生效）",
+    "type": "list",
+    "hint": "仅当退群事件发生在这些群号时才执行禁用；留空表示不限群。",
+    "default": []
+  },
+  "notify_group": {
+    "description": "在群内回报禁用结果",
+    "type": "bool",
+    "hint": "开启后，会在发生退群的群里发送一条禁用结果提示消息。",
+    "default": false
+  },
+  "dry_run": {
+    "description": "演练模式（只查询不禁用）",
+    "type": "bool",
+    "hint": "开启后只做邮箱匹配与日志记录，不会真正调用禁用接口。建议首次部署先开启，确认 QQ→邮箱→账户 映射无误后再关闭。仅影响退群自动禁用；手动命令 /newapi_ban、/newapi_unban 始终真实执行。",
+    "default": false
+  },
+  "verify_ssl": {
+    "description": "校验 HTTPS 证书",
+    "type": "bool",
+    "hint": "若 new-api 使用自签名证书的 https，可关闭；http 或正规证书请保持开启。",
+    "default": true
+  },
+  "request_timeout": {
+    "description": "请求超时时间（秒）",
+    "type": "int",
+    "hint": "调用 new-api 的单次请求超时，默认 10 秒。",
+    "default": 10
+  }
+}
