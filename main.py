@@ -12,6 +12,7 @@ from aiohttp import ClientSession, ClientTimeout
 from astrbot.api import AstrBotConfig, logger
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, register
+import astrbot.api.message_components as Comp
 
 # meow-api 用户状态常量（见 meow-api common/constants.go：1=启用，2=禁用）
 _STATUS_ENABLED = 1
@@ -125,36 +126,48 @@ class MeowApiBanPlugin(Star):
     @filter.command("meowapi_ban")
     @filter.permission_type(filter.PermissionType.ADMIN)
     async def cmd_ban(self, event: AstrMessageEvent, qq: str = ""):
-        """手动禁用某 QQ 对应的 meow-api 账户：/meowapi_ban <QQ号>（仅机器人管理员）。"""
+        """手动禁用某 QQ 对应的 meow-api 账户：/meowapi_ban @某人 或 /meowapi_ban <QQ号>（仅机器人管理员）。"""
         async for r in self._cmd_manage(event, qq, "disable"):
             yield r
 
     @filter.command("meowapi_unban")
     @filter.permission_type(filter.PermissionType.ADMIN)
     async def cmd_unban(self, event: AstrMessageEvent, qq: str = ""):
-        """手动解禁某 QQ 对应的 meow-api 账户：/meowapi_unban <QQ号>（仅机器人管理员）。"""
+        """手动解禁某 QQ 对应的 meow-api 账户：/meowapi_unban @某人 或 /meowapi_unban <QQ号>（仅机器人管理员）。"""
         async for r in self._cmd_manage(event, qq, "enable"):
             yield r
+
+    def _resolve_target_qq(self, event: AstrMessageEvent, qq_arg: str) -> str:
+        """解析命令目标 QQ：优先取消息里被 @ 的成员（排除 @全体 与 @机器人自己），
+        否则回退到纯数字文本参数。命令行里 @某人 是 At 消息段、不进文本，必须单独取。"""
+        self_id = str(event.get_self_id())
+        for seg in event.get_messages():
+            if isinstance(seg, Comp.At) and not isinstance(seg, Comp.AtAll):
+                at_qq = str(getattr(seg, "qq", "")).strip()
+                if at_qq and at_qq.lower() != "all" and at_qq != self_id:
+                    return at_qq
+        qq_arg = (qq_arg or "").strip()
+        return qq_arg if qq_arg.isdigit() else ""
 
     async def _cmd_manage(self, event: AstrMessageEvent, qq: str, action: str):
         """手动命令共用逻辑；手动操作始终真实执行（不受 dry_run 影响）。"""
         name = "meowapi_ban" if action == "disable" else "meowapi_unban"
         verb = "禁用" if action == "disable" else "解禁"
-        qq = (qq or "").strip()
-        if not qq.isdigit():
-            yield event.plain_result(f"用法：/{name} <QQ号>")
+        target = self._resolve_target_qq(event, qq)
+        if not target:
+            yield event.plain_result(f"用法：/{name} @某人  或  /{name} <QQ号>")
             return
         if not self.base_url or not self.access_token:
             yield event.plain_result("[meow-api] 插件未配置 meowapi_base_url / meowapi_access_token。")
             return
-        email = f"{qq}@{self.email_domain}"
+        email = f"{target}@{self.email_domain}"
         try:
             ok, summary = await self._manage_by_email(email, action, respect_dry_run=False)
         except Exception as e:
-            logger.error(f"[meowapi-ban] 手动{verb} qq={qq} 异常: {e}", exc_info=True)
+            logger.error(f"[meowapi-ban] 手动{verb} qq={target} 异常: {e}", exc_info=True)
             ok, summary = False, f"内部异常：{e}"
         logger.info(f"[meowapi-ban] 手动{verb} email={email} 成功={ok} 详情={summary}")
-        yield event.plain_result(f"[meow-api 手动{verb}] {qq}\n{summary}")
+        yield event.plain_result(f"[meow-api 手动{verb}] {target}\n{summary}")
 
     async def _manage_by_email(self, email: str, action: str, respect_dry_run: bool = True):
         """按邮箱精确匹配 meow-api 账户并执行 action（disable/enable）。返回 (是否全部成功, 文字说明)。"""
