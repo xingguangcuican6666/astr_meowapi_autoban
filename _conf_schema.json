@@ -43,6 +43,12 @@
     "hint": "开启后只做邮箱匹配与日志记录，不会真正调用禁用接口。建议首次部署先开启，确认 QQ→邮箱→账户 映射无误后再关闭。仅影响退群自动禁用；手动命令 /meowapi_ban、/meowapi_unban 始终真实执行。",
     "default": false
   },
+  "query_others_admin_only": {
+    "description": "查询他人数据仅限机器人管理员",
+    "type": "bool",
+    "hint": "开启（默认）：/查余额、/查使用日志、/查用量 在带 @某人 或 QQ 号查询他人时，要求发送者是 AstrBot 管理员；不带参数始终查自己。关闭：任何成员都能查询任意 QQ 的余额与使用记录，请注意隐私风险。",
+    "default": true
+  },
   "verify_ssl": {
     "description": "校验 HTTPS 证书",
     "type": "bool",
